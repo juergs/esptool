@@ -102,8 +102,11 @@ class ESPROM:
             self.write(pkt)
 
         # Read header of response and parse
-        if self._port.read(1) != '\xc0':
-            raise Exception('Invalid head of packet')
+        for i in range(10):
+            if self._port.read(1) == '\xc0':
+                break
+        else:
+            raise Exception('No packet header found')
         hdr = self.read(8)
         (resp, op_ret, len_ret, val) = struct.unpack('<BBHI', hdr)
         if resp != 0x01 or (op and op_ret != op):
@@ -136,7 +139,7 @@ class ESPROM:
         time.sleep(0.1)
         self._port.setDTR(False)
 
-        self._port.timeout = 0.5
+        self._port.timeout = 0.1
         for i in xrange(10):
             try:
                 self._port.flushInput()
@@ -144,7 +147,8 @@ class ESPROM:
                 self.sync()
                 self._port.timeout = 5
                 return
-            except:
+            except Exception, e:
+                sys.stdout.write("%s\n" % e)
                 time.sleep(0.1)
         raise Exception('Failed to connect')
 
